@@ -77,12 +77,11 @@ seed0/
 1. [pretrained checkpoint] Go into `~/checkpoints` on `node0` and extract one of the files in there by doing `tar xzvf <filename>.tar.gz`. You will get a very similar directory structure as shown above in the last step of train instructions. 
 2. Move the `learner0*` checkpoint directory to be inside `~/ConstrainedOrca/rl-module/train_dir/seed0/`. This `learner0*` folder name is the `<model_name>`. You may have to create the `~/ConstrainedOrca/rl-module/train_dir/seed0/` folder if it does not already exist.
 3. Run these two commands:
-```bash
-ln -s ~/traces/sage_traces/wired192 ~/traces/synthetic/
-ln -s ~/traces/sage_traces/wired192 ~/traces/variable-links/
-```
-
-3. Run `./scripts/eval_orca.sh <model_name> <trace_dir> <results_dir> <start_run> <end_run> <constraints_id> <bdp_multiplier> <x2>`. 
+    ```bash
+    ln -s ~/traces/sage_traces/wired192 ~/traces/synthetic/
+    ln -s ~/traces/sage_traces/wired192 ~/traces/variable-links/
+    ```
+4. Run `./scripts/eval_orca.sh <model_name> <trace_dir> <results_dir> <start_run> <end_run> <constraints_id> <bdp_multiplier> <x2>`. 
     - `<trace_dir>` should be one of `~/traces/sage_traces`, `~/traces/synthetic`, or `~/traces/variable-links`.
     - `<results_dir>` is where you want evaluation results saved. This `eval_orca.sh` script will (one by one) run all traces inside the `<trace_dir>` you provided with the `<model_name>` you provided.
     - `<start_run>` and `<end_run>` let you set how many times you want to repeat the experiment. e.g., setting `<start_run> <end_run>` to `1 5` will run each trace 5 times, independently. 
@@ -91,13 +90,13 @@ ln -s ~/traces/sage_traces/wired192 ~/traces/variable-links/
     - `x2 = 25` for deep / shallow buffer models and `x2 = 1` for robustness models. When in doubt, the checkpoint directory (`learner*`) will contain the `x2` and `constraints_id` used during training - the same values need to be used during eval. 
 
 4. Here are some example `eval_orca.sh` commands for the provided deep buffer, shallow buffer and robustness checkpoints:
-```bash
-# run the provided deep buffer checkpoint on real world traces (1 run)
-./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id11_xtwo25 ~/traces/variable-links/ ~/eval_results/ 1 1 11 5 25   
+    ```bash
+    # run the provided deep buffer checkpoint on real world traces (1 run)
+    ./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id11_xtwo25 ~/traces/variable-links/ ~/eval_results/ 1 1 11 5 25   
 
-# run the provided shallow buffer checkpoint on synthetic traces (3 runs)
-./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id12_xtwo25 ~/traces/synthetic/ ~/eval_results/ 1 3 12 0.5 25   
-```
+    # run the provided shallow buffer checkpoint on synthetic traces (3 runs)
+    ./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id12_xtwo25 ~/traces/synthetic/ ~/eval_results/ 1 3 12 0.5 25   
+    ```
 
 5. Steps to double check eval is working as intended:
     - Look for a log line that looks like this: (checkpoint exists should be True)
