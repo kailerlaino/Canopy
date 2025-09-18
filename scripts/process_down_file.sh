@@ -8,7 +8,9 @@ for resultfile in `find "$RESULTS_DIR/$dir" -type f -name 'down-*'`; do
     sumname=`echo $resultfile | sed 's/down-/trimmedsum-/'`
     if [ ! -f "$sumname" ]; then
         python3 process_down_files.py $resultfile
-        $HOME/ConstrainedOrca/rl-module/mm-thr 500 $trimmedname 1>tmp 2>$sumname
+        if [ -f "$trimmedname" ]; then    
+          $HOME/ConstrainedOrca/rl-module/mm-thr 500 $trimmedname 1>tmp 2>$sumname
+        fi
         rm -rfv tmp
     else
         echo "Skipping $resultfile since final sumfile exists"

@@ -12,7 +12,7 @@ git clone https://github.com/Soheil-ab/sage.git
 mv sage/traces/ sage/sage_traces/
 mv sage/sage_traces/ traces/
 
-ACTOR_NODE_IPS=`python3 -c "import json; f = open('rl-module/params_distributed.json'); data = json.load(f)['actor_ip']; f.close(); node_ips=set(map(lambda x: x.split(':')[0], data)); print(' '.join(node_ips))"`
+ACTOR_NODE_IPS=`python3 -c "import json; f = open('./ConstrainedOrca/rl-module/params_distributed.json'); data = json.load(f)['actor_ip']; f.close(); node_ips=set(map(lambda x: x.split(':')[0], data)); print(' '.join(node_ips))"`
 
 for actor_ip in $ACTOR_NODE_IPS
 do  

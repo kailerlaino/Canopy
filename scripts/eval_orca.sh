@@ -8,9 +8,12 @@
 # $7: bdp_multiplier
 # $8: x2
 
+sudo mkdir -p /mydata/log/
+sudo chown $USER:$(id -gn) /mydata/log/
+
 if [ "$#" -ne 8 ]; then
   echo "eval_orca.sh [ERROR] Only $# args found. Expected 8"
-  echo "Usage: $0 <model_name> <trace_dir> <results_dir> <start_run> <end_run> <constraints_id> <x2>"
+  echo "Usage: $0 <model_name> <trace_dir> <results_dir> <start_run> <end_run> <constraints_id> <bdp_multiplier> <x2>"
   exit 1
 fi
 
@@ -88,7 +91,7 @@ do
     for trace in $(ls $trace_dir)
     do
         # Check if the trace is a file.
-        if [ -f $trace_dir/$trace ]
+        if [ -f "$trace_dir/$trace" ] && [ ! -L "$trace_dir/$trace" ]
         then
             # If the trace is a fixed bandwidth trace, then run only if it is in the fixed_bw_traces list.
             if [[ "$trace_dir" != *"sage_traces"* ]]; then
@@ -142,7 +145,7 @@ do
             echo "[INFO] Evaluation completed for $trace. Sleeping 5 seconds."
             sleep 5
         else
-            echo "Skipping $trace. Not a file."
+            echo "Skipping $trace. Not a regular file (e.g. might be a symlink or a directory)."
         fi
     done
 

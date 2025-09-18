@@ -37,7 +37,7 @@ This repository contains code and documentation to train and evaluate `Canopy` m
 2. [from node0 of your cloudlab job] `v9_multi_train.sh` is the entrypoint to training. Run ONE of the following commands (in tmux/screen) to train a deep buffer or shallow buffer model respectively (might take a couple hours): 
 
 ```bash
-bash scripts/v9_multi_train.sh 0.25 5 3 raw-sym 25 0 11 25 $USER # train deep buffer model 
+bash scripts/v9_multi_train.sh 0.25 5 3 raw-sym 25 0 11 25 $USER # train deep buffer Canopy model 
 bash scripts/v9_multi_train.sh 0.25 5 3 raw-sym 25 0 12 25 $USER # train shallow buffer Canopy model
 ```
 
@@ -74,13 +74,41 @@ seed0/
 ```
 
 ## Eval
-1. [pretrained checkpoint] Go into `~/checkpoints` on `node0` and extract one of the `tar.gz` files in there. You will get a very similar directory structure as shown above in the last step of train instructions. 
-2. Move the `learner0*` checkpoint directory to be inside `~/ConstrainedOrca/rl-module/train_dir/seed0/`. This `learner0*` folder name is the `<model_name>`.
-3. Run `./scripts/eval_orca.sh <model_name> <trace_dir> <results_dir> <start_run> <end_run> <constraints_id>`. `<start_run>` and `<end_run>` let you set how many times you want to repeat the experiment. e.g., setting `<start_run> <end_run>` to `1 5` will run each trace 5 times, independently.
-3. `<trace_dir>` should be one of `~/traces/sage_traces`, `~/traces/synthetic`, or `~/traces/variable-links`.
-4. `<results_dir>` is where you want evaluation results saved. This `eval_orca.sh` script will (one by one) run all traces inside the `<trace_dir>` you provided with the `<model_name>` you provided.
+1. [pretrained checkpoint] Go into `~/checkpoints` on `node0` and extract one of the files in there by doing `tar xzvf <filename>.tar.gz`. You will get a very similar directory structure as shown above in the last step of train instructions. 
+2. Move the `learner0*` checkpoint directory to be inside `~/ConstrainedOrca/rl-module/train_dir/seed0/`. This `learner0*` folder name is the `<model_name>`. You may have to create the `~/ConstrainedOrca/rl-module/train_dir/seed0/` folder if it does not already exist.
+3. Run these two commands:
+```bash
+ln -s ~/traces/sage_traces/wired192 ~/traces/synthetic/
+ln -s ~/traces/sage_traces/wired192 ~/traces/variable-links/
+```
+
+3. Run `./scripts/eval_orca.sh <model_name> <trace_dir> <results_dir> <start_run> <end_run> <constraints_id> <bdp_multiplier> <x2>`. 
+    - `<trace_dir>` should be one of `~/traces/sage_traces`, `~/traces/synthetic`, or `~/traces/variable-links`.
+    - `<results_dir>` is where you want evaluation results saved. This `eval_orca.sh` script will (one by one) run all traces inside the `<trace_dir>` you provided with the `<model_name>` you provided.
+    - `<start_run>` and `<end_run>` let you set how many times you want to repeat the experiment. e.g., setting `<start_run> <end_run>` to `1 5` will run each trace 5 times, independently. 
+    - `<constraints_id>` should be set to 11 (for deep buffer models), 12 (for shallow buffer models), and 7 (for robustness models). 
+    - `bdp_multiplier` is used to set the queue size for the emulated `mahimahi` link; setting this variable to `x` causes the queue size to be `x * bandwidth * delay`. We used 5BDP / 0.5 BDP for evaluating deep / shallow buffer models respectively. To match the evaluation we did in paper, set this variable to `5` or `0.5` for deeep  or shallow buffer models respectively. 
+    - `x2 = 25` for deep / shallow buffer models and `x2 = 1` for robustness models. When in doubt, the checkpoint directory (`learner*`) will contain the `x2` and `constraints_id` used during training - the same values need to be used during eval. 
+
+4. Here are some example `eval_orca.sh` commands for the provided deep buffer, shallow buffer and robustness checkpoints:
+```bash
+# run the provided deep buffer checkpoint on real world traces (1 run)
+./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id11_xtwo25 ~/traces/variable-links/ ~/eval_results/ 1 1 11 5 25   
+
+# run the provided shallow buffer checkpoint on synthetic traces (3 runs)
+./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id12_xtwo25 ~/traces/synthetic/ ~/eval_results/ 1 3 12 0.5 25   
+```
+
+5. Steps to double check eval is working as intended:
+    - Look for a log line that looks like this: (checkpoint exists should be True)
+        ```
+        ## checkpoint dir: /users/rohitd99/ConstrainedOrca/rl-module/train_dir/seed0/learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id11_xtwo25
+        ## checkpoint exists?: True
+        ```
+    - You might see an error saying `sysv_ipc.ExistentialError: No shared memory exists with the key 123456` -- this can be ignored.
+    - You see the message `[DataThread] Server is sending the traffic`.
 
 ## Plotting and analysis
-0. Use `cd scripts && ./process_down_file.sh <result_dir>` to preprocess down files.
-1. Use `./scripts/plots/plot_thr.py` for motivation figures
-2. Use `./scripts/plots/plot_thr_delay.py` for thr vs delay plots.
+1. Use `source ~/venv/bin/activate && cd scripts && ./process_down_file.sh <result_dir>` to preprocess down files - if a file has already been processed, this script skips the file - so you can safely rerun it on the same eval_results directory if new files have been added.
+2. Use `./scripts/plots/plot_thr.py` for motivation figures
+3. Use `./scripts/plots/plot_thr_delay.py` for thr vs delay plots.

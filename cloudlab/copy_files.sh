@@ -21,7 +21,7 @@ HOSTS=$1
 for host in $HOSTS; do
   echo "Pushing to $host ..."
   # Move the train_dir/ to a new location.
-  # ssh -o StrictHostKeyChecking=no $host 'if [ -d ~/ConstrainedOrca/rl-module/train_dir ]; then mv ~/ConstrainedOrca/rl-module/train_dir ~/; else mkdir -p ~/train_dir; fi'
+  ssh -o StrictHostKeyChecking=no $host 'if [ -d ~/ConstrainedOrca/rl-module/train_dir ]; then mv ~/ConstrainedOrca/rl-module/train_dir ~/; else mkdir -p ~/train_dir; fi'
   ssh -o StrictHostKeyChecking=no $host "rm -rfv ~/ConstrainedOrca/; mkdir -p ~/ConstrainedOrca/;"
   scp -q -o StrictHostKeyChecking=no $TARBALL $host:~/ConstrainedOrca/$TARBALL >/dev/null 2>&1 &
   ssh -o StrictHostKeyChecking=no $host "mkdir -p ~/ConstrainedOrca/rl-module/training_log"
@@ -37,9 +37,9 @@ wait
 rm -f $TARBALL
 
 # Move the train_dir/ back to the original location.
-# for host in $HOSTS; do
-#   ssh -o StrictHostKeyChecking=no $host "mv ~/train_dir ~/ConstrainedOrca/rl-module/"
-# done
+for host in $HOSTS; do
+  ssh -o StrictHostKeyChecking=no $host "mv ~/train_dir ~/ConstrainedOrca/rl-module/"
+done
 
 if [[ $2 == "nobuild" ]]; then
   echo "[WARN WARN WARN] You have copied over files but did not build them. This is usually NOT desired behaviour"
