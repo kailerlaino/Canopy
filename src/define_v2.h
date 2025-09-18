@@ -112,7 +112,7 @@ int seed=0;
 u32 target=50; //50ms
 u32 report_period=5;//5s
 double mm_loss_rate=0;
-const char* DEFAULT_TRACE_DIR = "~/traces/sage_traces/";
+const char* DEFAULT_TRACE_DIR = "~/ConstrainedOrca/traces/";
 char* FINAL_TRACE_DIR;
 #define FLOW_NUM 1
 int sock[FLOW_NUM];

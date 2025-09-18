@@ -14,7 +14,7 @@ if [[ "$1" != *"@"* ]]; then
 fi
 
 TARBALL=testbed.tar.gz
-tar -czf $TARBALL rl-module/ scripts/ cloudlab/ src/ *.sh *.json
+tar -czf $TARBALL rl-module/ scripts/ cloudlab/ src/ traces/ *.sh *.json
 
 HOSTS=$1
 
