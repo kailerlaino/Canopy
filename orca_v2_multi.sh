@@ -35,7 +35,7 @@ if [ $# -eq 17 ] || [ $# -eq 18 ]; then
         training_session_idx=-1
     fi
 
-    ACTOR_NODE_IPS=`python3 -c "import json; f = open('rl-module/params_distributed.json'); data = json.load(f)['actor_ip']; f.close(); node_ips=set(map(lambda x: x.split(':')[0], data)); print(' '.join(node_ips))"`
+    ACTOR_NODE_IPS=`python3 -c "import json; f = open('rl-module/params_distributed.json'); data = json.load(f)['actor_ip']; f.close(); node_ips=set(map(lambda x: x.split(':')[0], data)); assert(len(node_ips) == 16); print(' '.join(node_ips))"`
     LEARNER_NODE_IP=`python3 -c "import json; f = open('rl-module/params_distributed.json'); learner_ip = json.load(f)['learner_ip']; f.close(); print(learner_ip.split(':')[0])"`
 
     echo "Make sure learner node and all actor nodes have no running processes before beginning..."
@@ -43,7 +43,7 @@ if [ $# -eq 17 ] || [ $# -eq 18 ]; then
     sudo killall -s9 python client orca-server-mahimahi_v0 orca-server-mahimahi_v2 || true
     for actor_ip in $ACTOR_NODE_IPS
     do  
-        ssh -o StrictHostKeyChecking=no ${cloudlab_username}@$actor_ip "sudo killall -s15 python client orca-server-mahimahi_v0 orca-server-mahimahi_v2; ps aux | grep "[C]onstrainedOrca" | tr -s ' ' | cut -d ' ' -f2 | xargs kill -9;" || true
+        ssh -o StrictHostKeyChecking=no ${cloudlab_username}@$actor_ip "sudo killall -s15 python client orca-server-mahimahi_v0 orca-server-mahimahi_v2; ps aux | grep "[C]onstrainedOrca" | tr -s ' ' | cut -d ' ' -f2 | xargs kill -9 2> /dev/null" || true
     done
 
     bw_array=`echo $(seq 6 6 192) | xargs`
@@ -99,8 +99,7 @@ if [ $# -eq 17 ] || [ $# -eq 18 ]; then
                       break 3
                    fi
 
-                   mahimahi_port=$((port_base+act_id))                   
-                   
+                   mahimahi_port=$((port_base+act_id))
                    this_actor_pid=`ssh -o StrictHostKeyChecking=no $cloudlab_username@$actor_ip_addr "nohup ./ConstrainedOrca/actor_v2.sh ${mahimahi_port} $epoch ${first_time} $scheme_ $dir $act_id $downl $upl $del $eval_duration $qs $max_steps ${model_name} ${constraints_id} ${threshold} ${max_actor_epochs} ${x1} ${x2} ${lambda_} ${original_model} ${snt_model_wo_ibp} ${k_symbolic_components} ${k} 0 $training_session_idx >> ~/actor_logs/actor_${act_id} 2>&1 & echo \\$!"`
                    echo "[EVAL] Started actor $act_id on $actor_ip_addr:$actor_port (MM port: $mahimahi_port) with PID $this_actor_pid [delay=$del; bw=$dl; bdp=$bdp; qs=$qs]"
 

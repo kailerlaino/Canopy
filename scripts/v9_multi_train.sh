@@ -61,17 +61,7 @@ experiment_name="v9_actorNum${num_actors}_multi_lambda${lambda_}_ksymbolic${k_sy
 
 rm -rfv ~/intermediate_checkpoints/
 
-# Run the training for only 1 session (?)
+# Run the training for only 1 session
 echo "About to start training session #1 at `date`"
 ./orca_v2_multi.sh 1 ${port_base} ${experiment_name} ${constraints_id} ${threshold} ${max_actor_epochs} ${x1} ${x2} ${lambda_} ${original_model} ${snt_model_wo_ibp} ${num_actors_per_node} ${k_symbolic_components} ${k} $reward_mode $seed ${cloudlab_username} 1
 echo "Done with training session #1 at `date`"
-
-# for train_session in 2 3 4 5; do
-#     echo "Will save current train_dir to a new location before continuing training";
-#     mkdir -p ~/intermediate_checkpoints/before_session_${train_session}/ 
-#     cp -r ~/ConstrainedOrca/rl-module/train_dir/ ~/intermediate_checkpoints/before_session_${train_session}/
-
-#     echo "About to start training session #${train_session} at `date`"
-#     ./orca_v2_multi.sh 2 ${port_base} ${experiment_name} ${constraints_id} ${threshold} ${max_actor_epochs} ${x1} ${x2} ${lambda_} ${original_model} ${snt_model_wo_ibp} ${num_actors_per_node} ${k_symbolic_components} ${k} $reward_mode $seed ${cloudlab_username} ${train_session}
-#     echo "Done with training session #${train_session} at `date`"
-# done

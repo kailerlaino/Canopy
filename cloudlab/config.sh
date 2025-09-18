@@ -5,30 +5,39 @@
 # 3: End node
 # 4: cluster
 # 5: cloudlab username
-# 6 (optional): KERNEL
+# 6: cloudlab project name
+# 7 (optional): KERNEL
 
 # Check if there are atleast 5 arguments
-if [[ $# -lt 5 ]]; then
-  echo "Usage (option 1): $0 <experiment_name> <start_node> <end_node> <CLOUDLAB_CLUSTER> <CLOUDLAB_USERNAME>"
+if [[ $# -lt 6 ]]; then
+  echo "Usage (option 1): $0 <experiment_name> <start_node> <end_node> <CLOUDLAB_CLUSTER> <CLOUDLAB_USERNAME> <CLOUDLAB_PROJECTNAME>"
   echo "OR"
-  echo "Usage (option 2): $0 <experiment_name> <start_node> <end_node> <CLOUDLAB_CLUSTER> <CLOUDLAB_USERNAME> KERNEL"
+  echo "Usage (option 2): $0 <experiment_name> <start_node> <end_node> <CLOUDLAB_CLUSTER> <CLOUDLAB_USERNAME> <CLOUDLAB_PROJECTNAME> KERNEL"
   echo "Use option 1 when you are using the VerifiedMLSys:orca profile on cloudlab, which has linux-learner kernel already installed"
   echo "Use option 2 when you want this script to install the linux-learner kernel"
   exit 1
 fi
+
+EXPERIMENT_NAME=$1
+START_NODE=$2
+END_NODE=$3
+CLUSTER=$4
+CLOUDLAB_USERNAME=$5
+CLOUDLAB_PROJECTNAME=$6
+KERNEL=$7
 
 declare -A clusternames
 clusternames[emu]="emulab.net"
 clusternames[wisc]="wisc.cloudlab.us"
 clusternames[utah]="utah.cloudlab.us"
 
-if [[ ! -v clusternames[$4] ]]; then
-  echo "'$4' is not a valid cluster."
+if [[ ! -v clusternames[$CLUSTER] ]]; then
+  echo "'$CLUSTER' is not a valid cluster."
   # You can exit or continue as needed
   exit 0
 fi
 
-HOSTS=`./cloudlab/nodes.sh $1 $2 $3 ${clusternames[$4]} $5 --all | tr -d ' ' | xargs`
+HOSTS=`./cloudlab/nodes.sh $EXPERIMENT_NAME $START_NODE $END_NODE ${clusternames[$CLUSTER]} $CLOUDLAB_USERNAME $CLOUDLAB_PROJECTNAME --all | tr -d ' ' | xargs`
 echo "Hosts: $HOSTS"
 all_ips=""
 for host in $HOSTS; do
@@ -62,7 +71,7 @@ for host in $HOSTS; do
   ssh -o StrictHostKeyChecking=no $host "echo -e \"$pkey\" >> ~/.ssh/authorized_keys"
 done
 
-./cloudlab/copy_files.sh "$HOSTS" $5
+./cloudlab/copy_files.sh "$HOSTS" $CLOUDLAB_USERNAME
 
 # Increase space on the nodes
 for host in $HOSTS ; do
@@ -82,7 +91,7 @@ for host in $HOSTS; do
 done
 
 # Setup kernel patches
-if [[ $6 == "KERNEL" ]]; then
+if [[ $KERNEL == "KERNEL" ]]; then
   for host in $HOSTS; do
     echo "Updating kernel on $host ..."
     ssh -o StrictHostKeyChecking=no $host "./kernel_update.sh 2>&1" &
@@ -112,7 +121,7 @@ if [[ $6 == "KERNEL" ]]; then
   done
 fi 
 
-if [[ $6 == "KERNEL" ]]; then
+if [[ $KERNEL == "KERNEL" ]]; then
   for host in $HOSTS ; do
     echo "Configuring Linux dependencies for $host"
     ssh -o StrictHostKeyChecking=no $host "tmux new-session -d -s config \"
@@ -177,27 +186,6 @@ for host in $HOSTS; do
   ssh $host 'while tmux has-session -t config 2>/dev/null; do sleep 1; done'
 done
 
-
-if [[ $4 == "wisc" ]]; then
-  for host in $HOSTS ; do
-    ssh -o StrictHostKeyChecking=no $host "sudo ln -s /proj/verifiedmlsys-PG0/ /proj/VerifiedMLSys"
-  done
-fi
-
-for host in $HOSTS ; do
-  ssh -o StrictHostKeyChecking=no $host "mkdir -p ~/actor_logs/"
-done
-
-for host in $HOSTS ; do
-  ssh -o StrictHostKeyChecking=no $host "
-    if [ -d /proj/VerifiedMLSys/ConstrainedOrca/traces ]; then
-      echo '$host: Trace directory exists'
-    else
-      echo '$host: Trace directory does not exist at /proj/VerifiedMLSys/ConstrainedOrca/traces'
-    fi"
-done
-
 echo "Done setting up"
 echo "To update code files on nodes do ./cloudlab/copy_files.sh \"${HOSTS[@]}\" build;"
-echo "To generate params file, run the following cmd on node0: ./cloudlab/setup_params.sh \"${all_ips}\" <n_actors_per_host>;"
 echo "In the setup_params.sh file, if you do not want node0 to have any actors, omit it from the list of hosts provided as CL args;"

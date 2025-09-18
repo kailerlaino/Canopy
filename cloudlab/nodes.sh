@@ -5,14 +5,19 @@
 # 3: End node of experiment
 # 4: CLOUDLAB_CLUSTER
 # 5: CLOUDLAB_USERNAME
-# 6: -a/--all to denote that all nodes have to be used
+# 6: CLOUDLAB_PROJECTNAME
+# 7: -a/--all to denote that all nodes have to be used
 
 EXP_NAME=$1
+START_NODE=$2
 NUM_NODE=$3
-NODE_PREFIX="node"
-
 DOMAIN=$4
 USER_NAME=$5
+CLOUDLAB_PROJECTNAME=$6
+
+NODE_PREFIX="node"
+
+
 
 if [ -z "${DOMAIN}" ] || [ -z "${USER_NAME}" ]; then
   echo "Error: DOMAIN ($DOMAIN) or USER_NAME ($USER_NAME) is not set or is empty"
@@ -20,9 +25,9 @@ if [ -z "${DOMAIN}" ] || [ -z "${USER_NAME}" ]; then
 fi
 
 if [[ "$DOMAIN" == "wisc.cloudlab.us" || "$DOMAIN" == "utah.cloudlab.us" ]]; then
-  PROJECT_EXT="verifiedmlsys-PG0"
+  PROJECT_EXT="$CLOUDLAB_PROJECTNAME-PG0"
 elif [[ "$DOMAIN" == "emulab.net" ]]; then
-  PROJECT_EXT="verifiedmlsys"
+  PROJECT_EXT="$CLOUDLAB_PROJECTNAME"
 else
   echo "Invalid DOMAIN: $DOMAIN"
   exit 1
@@ -37,7 +42,7 @@ SKIP_NODES=""
 MANUAL_ORDER=""
 
 if [ -z "$MANUAL_ORDER" ]; then
-  i=$2
+  i=$START_NODE
   while [ $i -le $NUM_NODE ]; do
     skip=0
     if [ "$6" != "-a" ] && [ "$6" != "--all" ]; then
