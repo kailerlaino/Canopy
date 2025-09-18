@@ -87,11 +87,11 @@ This repository contains code and documentation to train and evaluate `Canopy` m
 
 4. Here are some example `eval_orca.sh` commands for the provided deep buffer, shallow buffer and robustness checkpoints:
     ```bash
-    # run the provided deep buffer checkpoint on real world traces (1 run)
-    ./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id11_xtwo25 ~/traces/variable-links/ ~/eval_results/ 1 1 11 5 25   
+    # run the provided deep buffer model on real world traces (1 run)
+    ./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id11_xtwo25 ~/traces/variable-links/ ~/eval_results/deep_buffer_real_world/ 1 1 11 5 25   
 
     # run the provided shallow buffer checkpoint on synthetic traces (3 runs)
-    ./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id12_xtwo25 ~/traces/synthetic/ ~/eval_results/ 1 3 12 0.5 25   
+    ./scripts/eval_orca.sh learner0-v9_actorNum256_multi_lambda0.25_ksymbolic5_k3_raw-sym_threshold25_seed0_constraints_id12_xtwo25 ~/traces/synthetic/ ~/eval_results/shallow_buffer_synthetic/ 1 3 12 0.5 25
     ```
 
 5. Steps to double check eval is working as intended:
@@ -105,5 +105,4 @@ This repository contains code and documentation to train and evaluate `Canopy` m
 
 ## Plotting and analysis
 1. Use `source ~/venv/bin/activate && cd scripts && ./process_down_file.sh <result_dir>` to preprocess down files - if a file has already been processed, this script skips the file - so you can safely rerun it on the same eval_results directory if new files have been added.
-2. Use `./scripts/plots/plot_thr.py` for motivation figures
-3. Use `./scripts/plots/plot_thr_delay.py` for thr vs delay plots.
+3. Use `cd ./scripts/plots/ && python3 plot_thr_delay.py ~/eval_results/deep_buffer_real_world/` to plot thr vs delay plots for the deep buffer model on real world traces. This script can plot multiple models in one figure as well - just give it a list of directories, and it will plot one line per directory. 
