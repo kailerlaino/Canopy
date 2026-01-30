@@ -128,8 +128,12 @@ do
                 echo "Trace $trace not exists. Will run now."
             fi
 
-            # Run evaluation.
-            C3_TRACE_DIR=$trace_dir ./scripts/run_eval.sh \
+            # Set up dataset directory for this trace
+            dataset_dir="${results_dir}/run${run}/dataset/${trace}"
+            mkdir -p "$dataset_dir"
+            
+            # Run evaluation with dataset dumping enabled
+            CANOPY_DATASET_DIR="$dataset_dir" C3_TRACE_DIR=$trace_dir ./scripts/run_eval.sh \
                 $model_name \
                 $trace \
                 $eval_k_steps \

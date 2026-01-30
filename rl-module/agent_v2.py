@@ -28,6 +28,7 @@ import numpy as np
 import os
 import time
 import warnings
+import json
 
 EXPLORE = 4000
 STDDEV = 0.1
@@ -35,6 +36,86 @@ NSTEP = 0.3
 
 
 from utils_v2 import OU_Noise, ReplayBuffer, G_Noise, Prioritized_ReplayBuffer
+
+
+class DataDumper:
+    """Dumps agent inputs and outputs to dataset files for analysis."""
+    
+    def __init__(self, dataset_dir="./dataset"):
+        """Initialize the dumper with a dataset directory."""
+        self.dataset_dir = dataset_dir
+        os.makedirs(dataset_dir, exist_ok=True)
+        
+        # Initialize files for different data types
+        self.action_file = os.path.join(dataset_dir, "canopy_input.jsonl")
+        self.q_value_file = os.path.join(dataset_dir, "canopy_output.jsonl")
+        self.experience_file = os.path.join(dataset_dir, "canopy_experience.jsonl")
+        
+        # Clear existing files
+        for f in [self.action_file, self.q_value_file, self.experience_file]:
+            if os.path.exists(f):
+                os.remove(f)
+    
+    def dump_action(self, state, action, action_no_noise):
+        """
+        Dump action prediction.
+        Args:
+            state: input state (numpy array)
+            action: output action with noise
+            action_no_noise: output action without noise
+        """
+        try:
+            data = {
+                'state': state.tolist() if isinstance(state, np.ndarray) else state,
+                'action': action.tolist() if isinstance(action, np.ndarray) else action,
+                'action_no_noise': action_no_noise.tolist() if isinstance(action_no_noise, np.ndarray) else action_no_noise,
+            }
+            with open(self.action_file, 'a') as f:
+                f.write(json.dumps(data) + '\n')
+        except Exception as e:
+            warnings.warn(f"Failed to dump action data: {e}")
+    
+    def dump_q_value(self, state, action, q_value):
+        """
+        Dump Q-value prediction.
+        Args:
+            state: input state (numpy array)
+            action: input action (numpy array)
+            q_value: output Q-value
+        """
+        try:
+            data = {
+                'state': state.tolist() if isinstance(state, np.ndarray) else state,
+                'action': action.tolist() if isinstance(action, np.ndarray) else action,
+                'q_value': float(q_value) if isinstance(q_value, (np.ndarray, np.floating)) else q_value,
+            }
+            with open(self.q_value_file, 'a') as f:
+                f.write(json.dumps(data) + '\n')
+        except Exception as e:
+            warnings.warn(f"Failed to dump Q-value data: {e}")
+    
+    def dump_experience(self, s0, a, r, s1, terminal):
+        """
+        Dump experience tuple (s0, a, r, s1, terminal).
+        Args:
+            s0: state at time t
+            a: action taken
+            r: reward received
+            s1: state at time t+1
+            terminal: whether episode terminated
+        """
+        try:
+            data = {
+                's0': s0.tolist() if isinstance(s0, np.ndarray) else s0,
+                'action': a.tolist() if isinstance(a, np.ndarray) else a,
+                'reward': float(r) if isinstance(r, (np.ndarray, np.floating)) else r,
+                's1': s1.tolist() if isinstance(s1, np.ndarray) else s1,
+                'terminal': float(terminal) if isinstance(terminal, (np.ndarray, np.floating)) else terminal,
+            }
+            with open(self.experience_file, 'a') as f:
+                f.write(json.dumps(data) + '\n')
+        except Exception as e:
+            warnings.warn(f"Failed to dump experience data: {e}")
 
 
 def create_input_op_shape(obs, tensor):
@@ -453,6 +534,10 @@ class Agent:
         self.td_error = self.critic_out - self.y
 
         self.summary_writer = summary
+        
+        # Initialize data dumper if environment variable is set
+        dataset_dir = os.environ.get('CANOPY_DATASET_DIR', None)
+        self.dumper = DataDumper(dataset_dir) if dataset_dir else None
 
     def build_learn(self):
         self.actor_optimizer = tf.train.AdamOptimizer(self.lr_a)
@@ -625,6 +710,9 @@ class Agent:
                 noise = self.actor_noise(action[0])
                 action += noise
                 action = np.clip(action, self.action_range[0], self.action_range[1])
+            # Dump input and output
+            if self.dumper:
+                self.dumper.dump_action(s, action[0], action_before_noise[0])
             return action, action_before_noise
         elif self.use_snt_model_wo_ibp:
             # Use the snt Actor model without the IBP wrapper for concrete action.
@@ -635,6 +723,9 @@ class Agent:
                 noise = self.actor_noise(action[0])
                 action += noise
                 action = np.clip(action, self.action_range[0], self.action_range[1])
+            # Dump input and output
+            if self.dumper:
+                self.dumper.dump_action(s, action[0], action_before_noise[0])
             return action, action_before_noise
         else:
             # Use the snt Actor model + IBP wrapper. Get the action by setting the delta as 0.0.
@@ -661,6 +752,9 @@ class Agent:
                 noise = self.actor_noise(action_before_noise[0])
                 action = action_before_noise + noise
                 action = np.clip(action, self.action_range[0], self.action_range[1])
+            # Dump input and output
+            if self.dumper:
+                self.dumper.dump_action(s, action[0], action_before_noise[0])
             return action, action_before_noise
 
     def get_symbolic_action(self, s, s_delta, use_noise=False):
@@ -692,14 +786,22 @@ class Agent:
             self.action: create_input_op_shape(a, self.action),
         }
 
-        return self.sess.run([self.critic_out], feed_dict=fd)
+        q_value = self.sess.run([self.critic_out], feed_dict=fd)
+        # Dump input and output
+        if self.dumper:
+            self.dumper.dump_q_value(s, a, q_value[0])
+        return q_value
 
     def get_q_actor(self, s):
         if self.use_original or self.use_snt_model_wo_ibp:
             fd = {
                 self.s0: create_input_op_shape(s, self.s0),
             }
-            return self.sess.run([self.critic_actor_out], feed_dict=fd)
+            q_value = self.sess.run([self.critic_actor_out], feed_dict=fd)
+            # Dump input and output
+            if self.dumper:
+                self.dumper.dump_q_value(s, np.zeros(self.a_dim), q_value[0])
+            return q_value
         else:
             fd = {
                 self.s0: create_input_op_shape(s, self.s0),
@@ -708,9 +810,16 @@ class Agent:
                 self.s0_delta: create_input_op_shape(np.zeros_like(s), self.s0_delta),
             }
             # The critic_actor_out is the concrete value of the Q value.
-            return self.sess.run([self.critic_actor_out], feed_dict=fd)
+            q_value = self.sess.run([self.critic_actor_out], feed_dict=fd)
+            # Dump input and output
+            if self.dumper:
+                self.dumper.dump_q_value(s, np.zeros(self.a_dim), q_value[0])
+            return q_value
 
     def store_experience(self, s0, a, r, s1, terminal):
+        # Dump experience data
+        if self.dumper:
+            self.dumper.dump_experience(s0, a, r, s1, terminal)
         self.rp_buffer.store(s0, a, r, s1, terminal)
 
     def store_many_experience(self, s0, a, r, s1, terminal, length):
