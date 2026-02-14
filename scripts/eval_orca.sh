@@ -146,6 +146,9 @@ do
                 $x2 \
                 $bdp_multiplier
 
+            # Ensure all Orca processes are stopped before the next trace 
+            source "$(dirname "$0")/kill_orca_processes.sh"
+            kill_orca_processes
             echo "[INFO] Evaluation completed for $trace. Sleeping 5 seconds."
             sleep 5
         else

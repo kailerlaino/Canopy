@@ -15,6 +15,9 @@ then
     original_model=${10}
     snt_model_wo_ibp=${11}
     cur_dir=`pwd -P`
+    source "${cur_dir}/scripts/kill_orca_processes.sh"
+    # Ensure we always clean up Orca processes on exit (success, failure, or signal)
+    trap 'kill_orca_processes' EXIT
     scheme_="cubic"
     max_steps=500000         #Run untill you collect 50k samples per actor
     eval_duration=300000000
@@ -36,9 +39,18 @@ then
         only_tcp=0
     fi
 
-    sed "s/\"ckptdir\"\: \"\"/\"ckptdir\"\: \"$model_name\"/" $cur_dir/params_base_eval.json > "${dir}/params.json"
-    sed -i "s/\"memsize\"\: 2553600/\"memsize\"\: $memory_size/" "${dir}/params.json"
-    sudo killall -s9 python client orca-server-mahimahi_v2
+    # Use # as sed delimiter so model_name (which may contain /) does not break the substitution
+    if [ ! -f "$cur_dir/params_base_eval.json" ]; then
+        echo "[ERROR] params_base_eval.json not found in $cur_dir. Run from repo root (e.g. ~/ConstrainedOrca)."
+        exit 1
+    fi
+    sed "s#\"ckptdir\"\: \"\"#\"ckptdir\"\: \"$model_name\"#" $cur_dir/params_base_eval.json > "${dir}/params.json"
+    sed -i "s#\"memsize\"\: 2553600#\"memsize\"\: $memory_size#" "${dir}/params.json"
+    if [ ! -s "${dir}/params.json" ]; then
+        echo "[ERROR] Failed to generate params.json (file empty or missing). Check params_base_eval.json and model_name."
+        exit 1
+    fi
+    kill_orca_processes
 
     epoch=20
     act_port=$port_base
@@ -122,14 +134,8 @@ then
         wait $pid
     done
 
-    #Bring down the learner and actors ...
-    for i in `seq 0 $((num_actors))`
-    do
-        sudo killall -s15 python
-        sudo killall -s15 orca-server-mahimahi_v2
-        sudo killall -s15 client
-    done
-    sudo killall -s9 python client orca-server-mahimahi_v2
+    #Bring down the learner and actors (trap also runs kill_orca_processes on EXIT)
+    kill_orca_processes
 else
     echo "usage: $0 [{Learning from scratch=1} {Continue your learning=0} {Just Do Evaluation=4}] [base port number ] ... (18 args)"
     echo "\t Error found only $# args. Expected 17"
@@ -137,5 +143,10 @@ fi
 
 # Convert params back.
 # sed $cur_dir/params_base.json > "${dir}/params.json"
-# Make sure all are down ...
-sudo killall -s9 python client orca-server-mahimahi_v2
+# Make sure all are down when script is run with wrong args
+if type kill_orca_processes &>/dev/null; then
+    kill_orca_processes
+else
+    source "$(dirname "$0")/scripts/kill_orca_processes.sh"
+    kill_orca_processes
+fi
