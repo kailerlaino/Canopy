@@ -1,0 +1,123 @@
+{
+  "run_id": "2026-03-20T01:34:22Z",
+  "model": "nova-lite",
+  "total_input_tokens": 8543,
+  "total_output_tokens": 8443,
+  "total_tokens": 16986,
+  "calls": [
+    {
+      "call": "generate_initial",
+      "input_tokens": 217,
+      "output_tokens": 701,
+      "total_tokens": 918
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 383,
+      "output_tokens": 200,
+      "total_tokens": 583
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 309,
+      "output_tokens": 184,
+      "total_tokens": 493
+    },
+    {
+      "call": "generate_initial",
+      "input_tokens": 217,
+      "output_tokens": 240,
+      "total_tokens": 457
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 403,
+      "output_tokens": 419,
+      "total_tokens": 822
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 383,
+      "output_tokens": 202,
+      "total_tokens": 585
+    },
+    {
+      "call": "generate_initial",
+      "input_tokens": 217,
+      "output_tokens": 156,
+      "total_tokens": 373
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 584,
+      "output_tokens": 419,
+      "total_tokens": 1003
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 403,
+      "output_tokens": 436,
+      "total_tokens": 839
+    },
+    {
+      "call": "generate_initial",
+      "input_tokens": 217,
+      "output_tokens": 662,
+      "total_tokens": 879
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 825,
+      "output_tokens": 905,
+      "total_tokens": 1730
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 584,
+      "output_tokens": 421,
+      "total_tokens": 1005
+    },
+    {
+      "call": "generate_initial",
+      "input_tokens": 217,
+      "output_tokens": 313,
+      "total_tokens": 530
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 825,
+      "output_tokens": 753,
+      "total_tokens": 1578
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 584,
+      "output_tokens": 419,
+      "total_tokens": 1003
+    },
+    {
+      "call": "generate_initial",
+      "input_tokens": 217,
+      "output_tokens": 249,
+      "total_tokens": 466
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 825,
+      "output_tokens": 723,
+      "total_tokens": 1548
+    },
+    {
+      "call": "mutate",
+      "input_tokens": 916,
+      "output_tokens": 751,
+      "total_tokens": 1667
+    },
+    {
+      "call": "generate_initial",
+      "input_tokens": 217,
+      "output_tokens": 290,
+      "total_tokens": 507
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "generation": 5,
+  "population": [
+    {
+      "code": "import numpy as np\nimport math\n\ndef policy(state: list) -> float:\n    \"\"\"\n    An improved congestion-control policy that uses weighted combination of features\n    to produce a control action within [-1, 1], with optimized weights and scaling.\n    \n    The state is a flat list of 70 floats (10 timesteps \u00d7 7 features).\n    Each feature represents different network metrics like throughput, loss rate, inverseRTT, etc.\n    \"\"\"\n    # Convert the input list to a numpy array and flatten it (though it's already flat)\n    state_array = np.array(state).flatten()\n    \n    # Ensure the state has the expected length\n    if len(state_array) != 70:\n        raise ValueError(\"State must contain exactly 70 elements\")\n    \n    # Define weights for each feature (7 features \u00d7 10 timesteps)\n    # Use optimized weights based on typical importance of each feature\n    n_timesteps = len(state_array) // 7\n    # Weighted importance for timesteps (more recent timesteps matter more)\n    time_weights = np.linspace(0.8, 1.0, n_timesteps)  \n    \n    # Reshape the state array to (n_timesteps, n_features)\n    state_2d = state_array.reshape((n_timesteps, 7))\n    \n    # Apply time weights to each timestep\n    weighted_state = state_2d * time_weights[:, np.newaxis]\n    \n    # Extract each feature across all timesteps using flat indexing\n    throughput = weighted_state[:, 0]          # Feature 0: throughput\n    loss_rate = weighted_state[:, 1]          # Feature 1: loss rate\n    inverse_rtt = weighted_state[:, 2]        # Feature 2: inverseRTT\n    feature_3 = weighted_state[:, 3]           # Feature 3\n    feature_4 = weighted_state[:, 4]           # Feature 4  \n    feature_5 = weighted_state[:, 5]           # Feature 5\n    feature_6 = weighted_state[:, 6]           # Feature 6\n    \n    # Optimized scoring function with feature-specific scaling and combining\n    # Throughput: higher is better, scaled by typical range\n    throughput_score = np.mean(throughput) * 0.6\n    \n    # Loss rate: lower is better, inverted and scaled \n    loss_score = -np.mean(loss_rate) * 0.9\n    \n    # Inverse RTT: higher is better (lower RTT), scaled appropriately\n    rtt_score = np.mean(inverse_rtt) * 0.4\n    \n    # Additional features: combined with optimized weights\n    extra_features = weighted_state[:, 3:]\n    extra_score = np.mean(extra_features, axis=1)\n    \n    # Combine all scores with optimized weights based on empirical importance\n    combined_score = (\n        0.4 * throughput_score + \n        0.45 * loss_score + \n        0.1 * rtt_score +\n        0.05 * np.mean(extra_score)\n    )\n    \n    # Scale the combined score to [-1, 1] using tighter bounds based on empirical range\n    # Assuming combined_score typically ranges from -1.8 to 2.2 after weighting\n    scaled_output = 2 * (combined_score - (-1.8)) / (2.2 - (-1.8)) - 1\n    \n    # Clamp to ensure it's within [-1, 1] for robustness\n    clamped_output = np.clip(scaled_output, -1.0, 1.0)\n    \n    return float(clamped_output)",
+      "mse": 0.07080113701221294
+    },
+    {
+      "code": "import numpy as np\nimport math\n\ndef policy(state: list) -> float:\n    \"\"\"\n    A congestion-control policy that uses a weighted combination of features\n    to produce a control action within [-1, 1].\n    \n    The state is a flat list of 70 floats (10 timesteps \u00d7 7 features).\n    Each feature represents different network metrics like throughput, loss rate, inverseRTT, etc.\n    \"\"\"\n    # Convert the input list to a numpy array and flatten it (though it's already flat)\n    state_array = np.array(state).flatten()\n    \n    # Ensure the state has the expected length\n    if len(state_array) != 70:\n        raise ValueError(\"State must contain exactly 70 elements\")\n    \n    # Define weights for each feature (7 features \u00d7 10 timesteps)\n    # We'll use a simple heuristic: more recent timesteps are more important\n    n_timesteps = len(state_array) // 7\n    weights = np.linspace(0.5, 1.0, n_timesteps)  # increasing importance for recent timesteps\n    \n    # Reshape the state array to (n_timesteps, n_features)\n    state_2d = state_array.reshape((n_timesteps, 7))\n    \n    # Apply weights to each timestep\n    weighted_state = state_2d * weights[:, np.newaxis]\n    \n    # Extract each feature across all timesteps\n    throughput = weighted_state[:, 0]     # Feature 0: throughput\n    loss_rate = weighted_state[:, 1]     # Feature 1: loss rate\n    inverse_rtt = weighted_state[:, 2]   # Feature 2: inverseRTT\n    # Features 3-6: additional metrics\n    \n    # Simple heuristic: \n    # - Higher throughput is good\n    # - Lower loss rate is good  \n    # - Higher inverseRTT (lower RTT) is good\n    \n    # Calculate scores for each feature\n    throughput_score = np.mean(throughput)\n    loss_score = -np.mean(loss_rate)  # negative because lower loss is better\n    rtt_score = np.mean(inverse_rtt)\n    \n    # Additional features scores (simple average)\n    extra_scores = np.mean(weighted_state[:, 3:], axis=1)\n    extra_score = np.mean(extra_scores)\n    \n    # Combine scores with some weights\n    # Throughput and loss are most important, then RTT, then others\n    combined_score = (\n        0.4 * throughput_score +\n        0.35 * loss_score +\n        0.15 * rtt_score +\n        0.1 * extra_score\n    )\n    \n    # Scale the combined score to [-1, 1]\n    # We assume the combined score can range roughly from -2 to 3 based on typical values\n    scaled_output = 2 * (combined_score - (-2)) / (3 - (-2)) - 1\n    \n    # Clamp to ensure it's within [-1, 1] in case of extreme values\n    clamped_output = np.clip(scaled_output, -1.0, 1.0)\n    \n    return float(clamped_output)",
+      "mse": 0.08163431305934474
+    },
+    {
+      "code": "import numpy as np\nimport math\n\ndef policy(state: list) -> float:\n    \"\"\"\n    An improved congestion-control policy that uses weighted combination of features\n    to produce a control action within [-1, 1], with optimized weights and scaling.\n    \n    The state is a flat list of 70 floats (10 timesteps \u00d7 7 features).\n    Each feature represents different network metrics like throughput, loss rate, inverseRTT, etc.\n    \"\"\"\n    # Convert the input list to a numpy array and flatten it (though it's already flat)\n    state_array = np.array(state).flatten()\n    \n    # Ensure the state has the expected length\n    if len(state_array) != 70:\n        raise ValueError(\"State must contain exactly 70 elements\")\n    \n    # Define weights for each feature (7 features \u00d7 10 timesteps)\n    # Use optimized weights based on typical importance of each feature\n    n_timesteps = len(state_array) // 7\n    # Weighted importance for timesteps (more recent timesteps matter more)\n    time_weights = np.linspace(0.7, 1.0, n_timesteps)  \n    \n    # Reshape the state array to (n_timesteps, n_features)\n    state_2d = state_array.reshape((n_timesteps, 7))\n    \n    # Apply time weights to each timestep\n    weighted_state = state_2d * time_weights[:, np.newaxis]\n    \n    # Extract each feature across all timesteps using flat indexing\n    throughput = weighted_state[:, 0]          # Feature 0: throughput\n    loss_rate = weighted_state[:, 1]          # Feature 1: loss rate\n    inverse_rtt = weighted_state[:, 2]        # Feature 2: inverseRTT\n    feature_3 = weighted_state[:, 3]           # Feature 3\n    feature_4 = weighted_state[:, 4]           # Feature 4  \n    feature_5 = weighted_state[:, 5]           # Feature 5\n    feature_6 = weighted_state[:, 6]           # Feature 6\n    \n    # Optimized scoring function with feature-specific scaling and combining\n    # Throughput: higher is better, scaled by typical range\n    throughput_score = np.mean(throughput) * 0.5\n    \n    # Loss rate: lower is better, inverted and scaled \n    loss_score = -np.mean(loss_rate) * 0.8\n    \n    # Inverse RTT: higher is better (lower RTT), scaled appropriately\n    rtt_score = np.mean(inverse_rtt) * 0.3\n    \n    # Additional features: combined with optimized weights\n    extra_features = weighted_state[:, 3:]\n    extra_score = np.mean(extra_features, axis=1)\n    \n    # Combine all scores with optimized weights based on empirical importance\n    combined_score = (\n        0.35 * throughput_score + \n        0.40 * loss_score + \n        0.15 * rtt_score +\n        0.10 * np.mean(extra_score)\n    )\n    \n    # Scale the combined score to [-1, 1] using tighter bounds based on empirical range\n    # Assuming combined_score typically ranges from -1.5 to 2.5 after weighting\n    scaled_output = 2 * (combined_score - (-1.5)) / (2.5 - (-1.5)) - 1\n    \n    # Clamp to ensure it's within [-1, 1] for robustness\n    clamped_output = np.clip(scaled_output, -1.0, 1.0)\n    \n    return float(clamped_output)",
+      "mse": 0.08329362903606845
+    },
+    {
+      "code": "import numpy as np\nimport math\n\ndef policy(state: list) -> float:\n    state_array = np.array(state).flatten()\n    size = len(state_array)\n    timesteps = size // 7\n    \n    # Extract features: throughput, loss rate, inverseRTT, etc.\n    throughput = state_array[0::7]  # Throughput feature\n    loss_rate = state_array[1::7]    # Loss rate feature\n    inverse_rtt = state_array[2::7]  # Inverse RTT feature\n    \n    # Calculate moving averages for smoothing\n    avg_throughput = np.mean(throughput)\n    avg_loss = np.mean(loss_rate)\n    avg_rtt = np.mean(inverse_rtt)\n    \n    # Compute normalized values\n    norm_throughput = np.tanh(avg_throughput / 100.0)\n    norm_loss = np.tanh(avg_loss * 10.0)\n    norm_rtt = np.tanh(avg_rtt * 0.1)\n    \n    # Combine features with appropriate weights\n    weighted_sum = (0.6 * norm_throughput) - (0.3 * norm_loss) + (0.1 * norm_rtt)\n    \n    # Apply sigmoid to constrain output to [-1, 1]\n    output = np.tanh(weighted_sum)\n    \n    return float(output)",
+      "mse": 0.09521788727932946
+    }
+  ],
+  "best_code": "import numpy as np\nimport math\n\ndef policy(state: list) -> float:\n    \"\"\"\n    An improved congestion-control policy that uses weighted combination of features\n    to produce a control action within [-1, 1], with optimized weights and scaling.\n    \n    The state is a flat list of 70 floats (10 timesteps \u00d7 7 features).\n    Each feature represents different network metrics like throughput, loss rate, inverseRTT, etc.\n    \"\"\"\n    # Convert the input list to a numpy array and flatten it (though it's already flat)\n    state_array = np.array(state).flatten()\n    \n    # Ensure the state has the expected length\n    if len(state_array) != 70:\n        raise ValueError(\"State must contain exactly 70 elements\")\n    \n    # Define weights for each feature (7 features \u00d7 10 timesteps)\n    # Use optimized weights based on typical importance of each feature\n    n_timesteps = len(state_array) // 7\n    # Weighted importance for timesteps (more recent timesteps matter more)\n    time_weights = np.linspace(0.8, 1.0, n_timesteps)  \n    \n    # Reshape the state array to (n_timesteps, n_features)\n    state_2d = state_array.reshape((n_timesteps, 7))\n    \n    # Apply time weights to each timestep\n    weighted_state = state_2d * time_weights[:, np.newaxis]\n    \n    # Extract each feature across all timesteps using flat indexing\n    throughput = weighted_state[:, 0]          # Feature 0: throughput\n    loss_rate = weighted_state[:, 1]          # Feature 1: loss rate\n    inverse_rtt = weighted_state[:, 2]        # Feature 2: inverseRTT\n    feature_3 = weighted_state[:, 3]           # Feature 3\n    feature_4 = weighted_state[:, 4]           # Feature 4  \n    feature_5 = weighted_state[:, 5]           # Feature 5\n    feature_6 = weighted_state[:, 6]           # Feature 6\n    \n    # Optimized scoring function with feature-specific scaling and combining\n    # Throughput: higher is better, scaled by typical range\n    throughput_score = np.mean(throughput) * 0.6\n    \n    # Loss rate: lower is better, inverted and scaled \n    loss_score = -np.mean(loss_rate) * 0.9\n    \n    # Inverse RTT: higher is better (lower RTT), scaled appropriately\n    rtt_score = np.mean(inverse_rtt) * 0.4\n    \n    # Additional features: combined with optimized weights\n    extra_features = weighted_state[:, 3:]\n    extra_score = np.mean(extra_features, axis=1)\n    \n    # Combine all scores with optimized weights based on empirical importance\n    combined_score = (\n        0.4 * throughput_score + \n        0.45 * loss_score + \n        0.1 * rtt_score +\n        0.05 * np.mean(extra_score)\n    )\n    \n    # Scale the combined score to [-1, 1] using tighter bounds based on empirical range\n    # Assuming combined_score typically ranges from -1.8 to 2.2 after weighting\n    scaled_output = 2 * (combined_score - (-1.8)) / (2.2 - (-1.8)) - 1\n    \n    # Clamp to ensure it's within [-1, 1] for robustness\n    clamped_output = np.clip(scaled_output, -1.0, 1.0)\n    \n    return float(clamped_output)",
+  "best_mse": 0.08346001426201156,
+  "best_mse_eval": 0.08346001426201156,
+  "best_mse_train": 0.07080113701221294,
+  "best_generation": 5,
+  "metrics_history": [
+    {
+      "generation": 0,
+      "best_mse_train": 0.13043751621990657,
+      "best_mse_eval": 0.1662025619315772,
+      "population_mse": [
+        0.13043751621990657,
+        0.2093677771966326,
+        0.24251492418829865,
+        1.2160223976147702
+      ],
+      "best_generation": 0
+    },
+    {
+      "generation": 0,
+      "best_mse_train": 0.10545624232299716,
+      "best_mse_eval": 0.12449371978140203,
+      "population_mse": [
+        0.10545624232299716,
+        0.13043751621990657,
+        0.1311369841308469,
+        0.2093677771966326
+      ],
+      "best_generation": 0
+    },
+    {
+      "generation": 1,
+      "best_mse_train": 0.10545624232299716,
+      "best_mse_eval": 0.12449371978140203,
+      "population_mse": [
+        0.10236036394251916,
+        0.10545624232299716,
+        0.13043751621990657,
+        0.1311369841308469
+      ],
+      "best_generation": 0
+    },
+    {
+      "generation": 2,
+      "best_mse_train": 0.08163431305934474,
+      "best_mse_eval": 0.09833829343572621,
+      "population_mse": [
+        0.08163431305934474,
+        0.10236036394251916,
+        0.10545624232299716,
+        0.11577233430976341
+      ],
+      "best_generation": 2
+    },
+    {
+      "generation": 3,
+      "best_mse_train": 0.08163431305934474,
+      "best_mse_eval": 0.09833829343572621,
+      "population_mse": [
+        0.08163431305934474,
+        0.10229931612352311,
+        0.10236036394251916,
+        Infinity
+      ],
+      "best_generation": 2
+    },
+    {
+      "generation": 4,
+      "best_mse_train": 0.08329362903606845,
+      "best_mse_eval": 0.08990145836995096,
+      "population_mse": [
+        0.08163431305934474,
+        0.08329362903606845,
+        0.10229931612352311,
+        0.10981767351222851
+      ],
+      "best_generation": 4
+    },
+    {
+      "generation": 5,
+      "best_mse_train": 0.07080113701221294,
+      "best_mse_eval": 0.08346001426201156,
+      "population_mse": [
+        0.07080113701221294,
+        0.08163431305934474,
+        0.08329362903606845,
+        0.09521788727932946
+      ],
+      "best_generation": 5
+    }
+  ],
+  "config_snapshot": {
+    "train_size": 1052,
+    "eval_size": 225,
+    "test_size": 226,
+    "split_seed": 42,
+    "population_size": 4,
+    "survivors_per_gen": 2,
+    "mutations_per_survivor": 1,
+    "max_generations": 5,
+    "model_name": "nova-lite",
+    "model_tier": "cheap"
+  }
+}
