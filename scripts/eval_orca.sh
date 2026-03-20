@@ -109,6 +109,10 @@ do
                     echo "Skipping $trace. We don't care about this one."
                     continue
                 fi
+                if [[ $trace == *"wired2.4g"* || $trace == *"wired4.8g"* ]]; then
+                    echo "Skipping $trace. Traces too large to evaluate."
+                    continue
+                fi
             fi
             
             echo "[INFO] Running evaluation for $trace."
